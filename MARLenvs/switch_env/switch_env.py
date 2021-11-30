@@ -55,16 +55,28 @@ class SwitchEnv(gym.Env):
 		self.viewer = None
 
 	def step(self, act: np.array) -> tuple[np.array, int, int, dict]:
+		
+		# act
 		self._act_agent(0, act[0])				
 		self._act_agent(1, act[1])
+
+		# get observations
 		obs = np.stack((self._get_observation(0), self._get_observation(1)))
-		if sum(self.switch_state) == 2:
+
+		# both agents reach goal simultaneously
+		if sum(self.switch_state) == 2 and not self.received_reward:
+			rew = 2
+			done = 1
+		# both agents reached goal
+		elif sum(self.switch_state) == 2:
 			rew = 1
 			done = 1
+		# one agent reached goal
 		elif sum(self.switch_state) == 1 and not self.received_reward:
 			rew = 1
 			done = 0
 			self.received_reward = True
+		# no agent reached goal
 		else:
 			rew = 0
 			done = 0
