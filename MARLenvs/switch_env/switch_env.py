@@ -145,6 +145,12 @@ class SwitchEnv(gym.Env):
 		self.viewer.render(return_rgb_array=mode == "rgb_array")
 
 
+	def close(self):
+		if self.viewer:
+			self.viewer.close()
+			self.viewer = None	
+
+
 	def _get_observation(self, agent_id: int) -> np.array:
 		
 		y = self.agents_pos[agent_id][0]
