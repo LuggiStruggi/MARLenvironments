@@ -41,7 +41,7 @@ class SwitchEnv(gym.Env):
 
 	metadata = {"render.modes": ["human"]}
 
-	def __init__(self, height: int, width: int, view: int):
+	def __init__(self, height: int = 7, width: int = 30, view: int = 5):
 		self.pixel_map = self._create_corridor_map(height, width, view - 1)
 		if view % 2 == 0:
 			raise ValueError("View must be odd integer value such that agent can be centered.")
@@ -49,13 +49,22 @@ class SwitchEnv(gym.Env):
 		self.width = width
 		self.height = height
 		self.agents_pos = [[view-1+height//2, view-1, 1], [view-1+height//2, width+(view-1)-1, 3]]
-		self.switch_pos = [[view-1+height//2, width+(view-1)-1], [view-1+height//2, view-1]]
+		self.switch_pos = [[view-1+height//2, 11*width//12+(view-1)-1], [view-1+height//2, width//12+view]]
 		self.switch_state = [0, 0]
 		self.received_reward = False
+		self.done = 0
 		self.viewer = None
 
 	def step(self, act: np.array) -> tuple[np.array, int, int, dict]:
 		
+		if self.done:
+			logger.warn(
+				"You are calling 'step()' even though this "
+				"environment has already returned done = True. You "
+				"should always call 'reset()' once you receive 'done = "
+				"True' -- any further steps are undefined behavior."
+			)
+
 		# act
 		self._act_agent(0, act[0])				
 		self._act_agent(1, act[1])
@@ -66,21 +75,21 @@ class SwitchEnv(gym.Env):
 		# both agents reach goal simultaneously
 		if sum(self.switch_state) == 2 and not self.received_reward:
 			rew = 2
-			done = 1
+			self.done = 1
 		# both agents reached goal
 		elif sum(self.switch_state) == 2:
 			rew = 1
-			done = 1
+			self.done = 1
 		# one agent reached goal
 		elif sum(self.switch_state) == 1 and not self.received_reward:
 			rew = 1
-			done = 0
+			self.done = 0
 			self.received_reward = True
 		# no agent reached goal
 		else:
 			rew = 0
-			done = 0
-		return obs, rew, done, {}
+			self.done = 0
+		return obs, rew, self.done, {}
 	
 	def reset(self) -> np.array:
 
@@ -90,7 +99,7 @@ class SwitchEnv(gym.Env):
 		self.pixel_map[self.switch_pos[1][0], self.switch_pos[1][1]] = 5
 
 		self.agents_pos = [[self.view-1+self.height//2, self.view-1, 1], [self.view-1+self.height//2, self.width+(self.view-1)-1, 3]]
-		self.switch_pos = [[self.view-1+self.height//2, self.width+(self.view-1)-1], [self.view-1+self.height//2, self.view-1]]
+		self.switch_pos = [[self.view-1+self.height//2, 11*self.width//12+(self.view-1)-1], [self.view-1+self.height//2, self.width//12+self.view]]
 		
 		self.pixel_map[self.agents_pos[0][0], self.agents_pos[0][1]] = 2
 		self.pixel_map[self.agents_pos[1][0], self.agents_pos[1][1]] = 3
