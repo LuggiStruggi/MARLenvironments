@@ -114,33 +114,36 @@ class SwitchEnv(gym.Env):
 		if self.viewer == None:
 			self.viewer = rendering.Viewer((100*self.pixel_map.shape[1])//4, (100*self.pixel_map.shape[0])//4)
 			self.viewer.set_bounds(0, self.pixel_map.shape[1], 0, self.pixel_map.shape[0])
-		
+			for i in range(self.pixel_map.shape[0]):
+				for j in range(self.pixel_map.shape[1]):
+					if self.pixel_map[i][j] == 1:
+						wall = rendering.FilledPolygon([(j, i), (j, i+1), (j+1, i+1), (j+1, i)])
+						self.viewer.add_geom(wall)
+
 		for i in range(self.pixel_map.shape[0]):
 			for j in range(self.pixel_map.shape[1]):
 				
 				if self.pixel_map[i][j] != 0:
 					x = j
 					y = self.pixel_map.shape[0] - i - 1
-				
-				if self.pixel_map[i][j] == 1:
-					wall = rendering.FilledPolygon([(x, y), (x, y+1), (x+1, y+1), (x+1, y)])
-					self.viewer.add_onetime(wall)
-				
-				elif self.pixel_map[i][j] == 2:
-					agent = self._get_rendered_agent(0, x, y, self.agents_pos[0][2])
+
+				if self.pixel_map[i][j] == 2:
+					agent, view = self._get_rendered_agent(0, x, y, self.agents_pos[0][2])
 					self.viewer.add_onetime(agent)
+					self.viewer.add_onetime(view)
 
 				elif self.pixel_map[i][j] == 3:
-					agent = self._get_rendered_agent(1, x, y, self.agents_pos[1][2])
+					agent, view = self._get_rendered_agent(1, x, y, self.agents_pos[1][2])
 					self.viewer.add_onetime(agent)
+					self.viewer.add_onetime(view)
 
 				elif self.pixel_map[i][j] == 4:
-					agent = self._get_rendered_switch(0, x, y)
-					self.viewer.add_onetime(agent)
+					switch = self._get_rendered_switch(0, x, y)
+					self.viewer.add_onetime(switch)
 
 				elif self.pixel_map[i][j] == 5:
-					agent = self._get_rendered_switch(1, x, y)
-					self.viewer.add_onetime(agent)
+					switch = self._get_rendered_switch(1, x, y)
+					self.viewer.add_onetime(switch)
 
 		self.viewer.render(return_rgb_array=mode == "rgb_array")
 
@@ -221,15 +224,20 @@ class SwitchEnv(gym.Env):
 		
 		if rot == 0:
 			agent = rendering.FilledPolygon([(x + 1/2, y + 5/6), (x + 4/5, y + 1/6), (x + 1/5, y + 1/6)])
+			view = rendering.PolyLine([(x-self.view//2, y+self.view), (x+self.view//2+1, y+self.view), (x+self.view//2+1, y), (x-self.view//2, y)],close=True)
 		elif rot == 1:
 			agent = rendering.FilledPolygon([(x + 5/6, y + 1/2), (x + 1/6, y + 4/5), (x + 1/6, y + 1/5)])
+			view = rendering.PolyLine([(x, y+self.view//2+1), (x+self.view, y+self.view//2+1), (x+self.view, y-self.view//2), (x, y-self.view//2)],close=True)
 		elif rot == 2:
 			agent = rendering.FilledPolygon([(x + 1/2, y + 1/6), (x + 4/5, y + 5/6), (x + 1/5, y + 5/6)])
+			view = rendering.PolyLine([(x-self.view//2, y-self.view+1), (x+self.view//2+1, y-self.view+1), (x+self.view//2+1, y+1), (x-self.view//2, y+1)],close=True)
 		elif rot == 3:
 			agent = rendering.FilledPolygon([(x + 1/6, y + 1/2), (x + 5/6, y + 4/5), (x + 5/6, y + 1/5)])
+			view = rendering.PolyLine([(x+1, y+self.view//2+1), (x-self.view+1, y+self.view//2+1), (x-self.view+1, y-self.view//2), (x+1, y-self.view//2)],close=True)
 		agent.set_color(*((1, 0, 0) if agent_id else (0, 0, 1)))
+		view.set_color(*((1, 0, 0) if agent_id else (0, 0, 1)))
 		
-		return agent
+		return agent, view
 
 
 	def _get_rendered_switch(self, switch_id: int, x: int, y: int) -> rendering.Geom:
