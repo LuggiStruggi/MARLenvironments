@@ -30,7 +30,7 @@ class SwitchEnv(gym.Env):
 		2      Turn right
 
 	Reward:
-		If both agents have pressed their switch the reward is 100 else -1.
+		If an agent reaches its switch for the first time the reward is 1.
 
 	Starting State:
 		 Both agents start on opposing sides of the map with their respective observation.
