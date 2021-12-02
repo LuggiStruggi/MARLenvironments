@@ -19,7 +19,7 @@ Very simple tabular environment which appears in [QMIX: Monotonic Value Function
 
 ## Switch-Corridor Environment
 This environment appears in [Value-Decomposition Networks For Cooperative
-Multi-Agent Learning](https://arxiv.org/pdf/1706.05296.pdf). Two agents try to reach a switch in the other room but can't fit through the corridor simultaneously. They observe their environment only partially through a maximal view.
+Multi-Agent Learning](https://arxiv.org/pdf/1706.05296.pdf). Two agents try to reach a switch in the other room but can't fit through the corridor simultaneously. They observe their environment only partially through a maximum-range view.
 
 <p align="left">
   <img src="readme_images/switch_env.png" width="700" title="Switch-Corridor Environment">
