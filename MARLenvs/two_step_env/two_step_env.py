@@ -52,35 +52,34 @@ class TwoStepEnv(gym.Env):
 			elif act[0] == 1:
 				self.game_state = 2
 			
-			obs = [[0], [1]]
-			done = [0]
-			rew = [0]
+			done = 0
+			rew = 0
 		
 		elif self.game_state == 1:
-			done = [1]
-			rew = [7]
+			done = 1
+			rew = 7
 			
 			# next game state
 			self.game_state = 3 + 2*int(act[0]) + int(act[1])
 
 		elif self.game_state == 2:
-			done = [1]
+			done = 1
 			if act[0] == 0 and act[1] == 0:
-				rew = [0]
+				rew = 0
 			elif act[0] == 1 and act[1] == 1:
-				rew = [8]
+				rew = 8
 			elif act[0] == 0 and act[1] == 1:
-				rew = [1]
+				rew = 1
 			elif act[0] == 1 and act[1] == 0:
-				rew = [1]
+				rew = 1
 			
 			# next game state
 			self.game_state = 7 + 2*int(act[0]) + int(act[1])
 		
 		# game is over yet step is called
 		elif self.game_state >= 3:
-			done = [1]
-			rew = [0]
+			done = 1
+			rew = 0
 			logger.warn(
 				"You are calling 'step()' even though this "
 				"environment has already returned done = True. You "
@@ -88,7 +87,7 @@ class TwoStepEnv(gym.Env):
 				"True' -- any further steps are undefined behavior."
 			)
 
-		return np.array(obs), np.array(rew), np.array(done), {}
+		return np.array(obs), rew, done, {}
 
 	def reset(self):
 		self.game_state = 0

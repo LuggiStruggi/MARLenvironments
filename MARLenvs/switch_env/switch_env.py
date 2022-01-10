@@ -2,6 +2,7 @@ import gym
 from gym import logger
 import numpy as np
 from gym.envs.classic_control import rendering
+from gym import spaces
 
 class SwitchEnv(gym.Env):
 	"""
@@ -41,19 +42,25 @@ class SwitchEnv(gym.Env):
 
 	metadata = {"render.modes": ["human"]}
 
-	def __init__(self, height: int = 7, width: int = 30, view: int = 5):
+	def __init__(self, height: int = 7, width: int = 30, view: int = 5, flatten_obs: bool = False):
 		self.pixel_map = self._create_corridor_map(height, width, view - 1)
 		if view % 2 == 0:
 			raise ValueError("View must be odd integer value such that agent can be centered.")
 		self.view = view
 		self.width = width
 		self.height = height
+		self.flatten = flatten_obs
 		self.agents_pos = [[view-1+height//2, view-1, 1], [view-1+height//2, width+(view-1)-1, 3]]
 		self.switch_pos = [[view-1+height//2, 11*width//12+(view-1)-1], [view-1+height//2, width//12+view]]
 		self.switch_state = [0, 0]
 		self.received_reward = False
 		self.done = 0
 		self.viewer = None
+
+		obs_space = spaces.Box(low=0, high=5, shape=(self.view+1 if self.view % 2 == 0 else self.view, self.view))
+		self.observation_space = spaces.Tuple((obs_space, obs_space))
+
+		self.action_space = spaces.Tuple((spaces.Discrete(3), spaces.Discrete(3)))
 
 	def step(self, act: np.array) -> tuple[np.array, int, int, dict]:
 		
@@ -89,6 +96,10 @@ class SwitchEnv(gym.Env):
 		else:
 			rew = 0
 			self.done = 0
+
+		if self.flatten:
+			obs = obs.reshape((2, self.view**2))
+
 		return obs, rew, self.done, {}
 	
 	def reset(self) -> np.array:
@@ -107,6 +118,11 @@ class SwitchEnv(gym.Env):
 		self.switch_state = [0, 0]
 		obs = np.stack((self._get_observation(0), self._get_observation(1)))
 
+		if self.flatten:
+			obs = obs.reshape((2, self.view**2))
+
+		self.done = 0
+		
 		return obs
 
 	def render(self, mode: str = "human"):
