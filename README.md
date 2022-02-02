@@ -35,12 +35,13 @@ Multi-Agent Learning](https://arxiv.org/pdf/1706.05296.pdf). Two agents try to r
 `env = gym.make('Switch-v0')`
 
 ## Navigation Environment
-This environment appears in [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/pdf/1706.02275). N circle shaped agents move in a 2D-environment by choosing from two continous actions: Distance to travel ∈ [0, 1] where 1 is an agent diameter, Direction ∈ [
+This environment appears in [Multi-Agent Actor-Critic for Mixed Cooperative-Competitive Environments](https://arxiv.org/pdf/1706.02275). N circle shaped agents move in a 2D-environment by choosing from two continous actions: Distance to travel ∈ [0, 1] where 1 is an agent diameter and direction ∈ [-π, π).
+They are rewarded for covering N circular landmarks and for not colliding. The way in which this is done can be changed.
 
 <p align="left">
-  <img src="readme_images/switch_env.png" width="700" title="Switch-Corridor Environment">
+  <img src="readme_images/navigation_env.png" width="700" title="Navigation Environment">
 </p>
 
-`env = gym.make('Switch-v0')`
+`env = gym.make('Navigation-v0', n_agents)`
 
 
