@@ -2,8 +2,15 @@
 Multi-Agent environments for [OpenAI Gym](https://github.com/openai/gym).
 
 # Installation
-To install, use `pip install -e git+https://github.com/LuggiStruggi/MARLenvironments#egg=MARLenvs`.
-Then just `import gym` & `ìmport MARLenvs`.
+To install, use 
+```
+pip install marlenvs
+```
+Then just 
+```python
+import gym
+import marlenvs
+```
 
 ### Requires:
   - gym
