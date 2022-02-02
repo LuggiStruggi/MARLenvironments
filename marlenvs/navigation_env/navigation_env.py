@@ -48,15 +48,15 @@ class NavigationEnv(gym.Env):
 		self.sparse = sparse
 		
 		self.low_state = np.array(
-        	[[-np.sqrt(2)*self.border for j in range(n_agents*4)] for i in range(n_agents)], dtype=np.float32
+        	[[-self.border for j in range(n_agents*4 - 2)] for i in range(n_agents)], dtype=np.float32
         )
 
 		self.high_state = np.array(
-        	[[np.sqrt(2)*self.border for j in range(n_agents*4)] for i in range(n_agents)], dtype=np.float32
+        	[[self.border for j in range(n_agents*4 - 2)] for i in range(n_agents)], dtype=np.float32
         )
 
 		self.action_space = spaces.Box(
-			low=np.array([[-np.pi, -1.0]]*n_agents), high=np.array([[np.pi, 1.0]]*n_agents), dtype=np.float32
+			low=np.array([[-np.pi, 0.0]]*n_agents), high=np.array([[np.pi, 1.0]]*n_agents), dtype=np.float32
         )
 		
 		self.observation_space = spaces.Box(
@@ -89,15 +89,14 @@ class NavigationEnv(gym.Env):
 		self.agents = np.clip(self.agents, 0.5, self.border-0.5)
 		obs, dist = self._get_observations()
 		
-		# number of agent collistions
-		n_collisions = (np.count_nonzero(dist[:, :self.n_agents] < 1) - self.n_agents)//2
+		# number of agent collistions (all distances between two agents smaller than agent diameter. Divided by two due to every distance twice in matrix) 
+		n_collisions = (np.count_nonzero(dist[:, :self.n_agents - 1] < 1))//2
 		
 		# number of uncovered landmarks
-		n_uncovered = np.count_nonzero(np.all(dist[:, self.n_agents:] > 0.25, axis=0))
+		n_uncovered = np.count_nonzero(np.all(dist[:, self.n_agents - 1:] > 0.25, axis=0))
 		
-		# distance of closest agent for each landmark
-		min_dist = np.sum(np.min(dist[:, self.n_agents:], axis=0))
-
+		# sum of distances of closest agent for each landmark
+		min_dist = np.sum(np.min(dist[:, self.n_agents - 1:], axis=0))
 		
 		if self.sparse:
 			rew = - (self.tau * n_uncovered + (1-self.tau) * n_collisions)
@@ -116,7 +115,7 @@ class NavigationEnv(gym.Env):
 
 		if self.step_counter >= self.max_steps or self.hold_step_counter >= self.hold_steps:
 			self.done = True
-
+		
 		return obs, rew, self.done, {}
 
 
@@ -138,26 +137,38 @@ class NavigationEnv(gym.Env):
 		
 		if action.shape != (self.n_agents, 2):
 			raise ValueError(f"Action has wrong shape. Expected ({self.n_agents}, 2), got {action.shape}.")
-		
-
+				
 
 	def _get_observations(self) -> np.array:
-		# n_agents x (n_agents + n_landmarks)
-		observations = np.zeros((self.n_agents, 4*self.n_agents))
-		dist = np.zeros((self.n_agents, 2*self.n_agents))
-		for i in range(len(self.agents)):
-			for j in range(len(self.agents)):	
-				observations[i, 2*self.n_agents + 2*j : 2*self.n_agents + 2*j + 2] = self.agents[i] - self.landmarks[j]
-				dist[i, self.n_agents + j] = np.linalg.norm(self.agents[i] - self.landmarks[j])
+		# n_agents x (n_agents - 1 + n_landmarks)*2
+		observations = np.zeros((self.n_agents, (2*self.n_agents - 1)*2))
+		# n_agents x (n_agents - 1 + n_landmarks)
+		dist = np.zeros((self.n_agents, 2*self.n_agents - 1))
+
+		for i in range(self.n_agents):
+			for j in range(self.n_agents):
+				
+				# agent-landmark x, y distances
+				observations[i, (self.n_agents-1)*2 + 2*j:(self.n_agents-1)*2 + 2*j + 2] = self.agents[i] - self.landmarks[j]
+				
+				# agent-landmark direct distances
+				dist[i, self.n_agents-1 + j] = np.linalg.norm(self.agents[i] - self.landmarks[j], ord=1)
+				
+				# agent-agent not with itself
 				if i == j:
 					continue
-				observations[i, 2*j:2*j+2] = self.agents[i] - self.agents[j]
-				dist[i, j] = np.linalg.norm(self.agents[i] - self.agents[j])
-				dist[j, i] = dist[i, j]
+				
+				k = j if j < i else j - 1
+
+				# agent-agent x, y distances
+				observations[i, 2*k:2*k+2] = self.agents[i] - self.agents[j]
+				
+				# agent-landmark direct distances
+				dist[i, k] = np.linalg.norm(self.agents[i] - self.agents[j], ord=1)
+		
 		return observations, dist
 
 	# Render environment
-
 	def render(self, mode="human"):
 		
 		if self.viewer == None:
@@ -190,13 +201,18 @@ class NavigationEnv(gym.Env):
 	def close(self):
 		if self.viewer:
 			self.viewer.close()
-			self.viewer = None	
+			self.viewer = None
 
+	def get_obs_dim(self):
+		return self.n_agents*4 - 2
 
+	def get_act_dim(self):
+		return 2
 
 if __name__ == "__main__":
 	n_agents = 3
 	env = NavigationEnv(n_agents)
+	obs = env.reset()
 	env.render()
 	while True:
 		obs, r, done, _ = env.step(env.action_space.sample())
