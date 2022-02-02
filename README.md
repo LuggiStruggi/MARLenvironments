@@ -47,7 +47,7 @@ They are rewarded for covering N circular landmarks and for not colliding. The w
 </p>
 
 ```python
-env = gym.make('Navigation-v0', n_agents)
+env = gym.make('Navigation-v0', n_agents=3)
 ```
 
 
