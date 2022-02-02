@@ -39,7 +39,7 @@ This environment appears in [Multi-Agent Actor-Critic for Mixed Cooperative-Comp
 They are rewarded for covering N circular landmarks and for not colliding. The way in which this is done can be changed.
 
 <p align="left">
-  <img src="readme_images/navigation_env.png" width="700" title="Navigation Environment">
+  <img src="readme_images/navigation_env.png" width="300" title="Navigation Environment">
 </p>
 
 `env = gym.make('Navigation-v0', n_agents)`
