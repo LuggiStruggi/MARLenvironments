@@ -42,8 +42,6 @@ class NavigationEnv(gym.Env):
 		
 		self.border = world_size*n_agents
 		self.n_agents = n_agents
-		self.agents = np.random.rand(n_agents, 2)*(self.border - 1) + 0.5
-		self.landmarks = np.random.rand(n_agents, 2)*(self.border - 0.5) + 0.25
 		self.tau = tau
 		self.sparse = sparse
 		
@@ -62,6 +60,21 @@ class NavigationEnv(gym.Env):
 		self.observation_space = spaces.Box(
 			low=self.low_state, high=self.high_state, dtype=np.float32
         )
+
+		
+		# min reward for all situations -> all landmarks in one corner all agents in the corner diagonally across
+		# -> maximum distance from landmarks + maximal overlapping
+		self.agents = np.full(shape=(n_agents, 2), fill_value=self.border - 0.5)
+		self.landmarks = np.full(shape=(n_agents, 2), fill_value=0.25)
+		_, dist = self._get_observations()
+		min_rew, _ = self._calculate_reward(dist)
+
+		self.reward_space = spaces.Box(
+			low=min_rew, high=0, shape=(1,)
+		)
+	
+		self.agents = np.random.rand(self.n_agents, 2)*(self.border - 1) + 0.5
+		self.landmarks = np.random.rand(self.n_agents, 2)*(self.border - 0.5) + 0.25
 
 		self.done = False
 		self.step_counter = 0
@@ -89,21 +102,7 @@ class NavigationEnv(gym.Env):
 		self.agents = np.clip(self.agents, 0.5, self.border-0.5)
 		obs, dist = self._get_observations()
 		
-		# number of agent collistions (all distances between two agents smaller than agent diameter. Divided by two due to every distance twice in matrix) 
-		n_collisions = (np.count_nonzero(dist[:, :self.n_agents - 1] < 1))//2
-		
-		# number of uncovered landmarks
-		n_uncovered = np.count_nonzero(np.all(dist[:, self.n_agents - 1:] > 0.25, axis=0))
-		
-		# sum of distances of closest agent for each landmark
-		min_dist = np.sum(np.min(dist[:, self.n_agents - 1:], axis=0))
-		
-		if self.sparse:
-			rew = - (self.tau * n_uncovered + (1-self.tau) * n_collisions)
-	
-		else:
-			rew = - (self.tau * min_dist + (1-self.tau) * n_collisions)
-		
+		rew, n_uncovered = self._calculate_reward(dist)
 
 		self.step_counter += 1
 
@@ -132,6 +131,26 @@ class NavigationEnv(gym.Env):
 		
 		return obs
 
+
+	def _calculate_reward(self, dist):
+
+		# number of agent collistions (all distances between two agents smaller than agent diameter. Divided by two due to every distance twice in matrix) 
+		n_collisions = (np.count_nonzero(dist[:, :self.n_agents - 1] < 1))//2
+		
+		# number of uncovered landmarks
+		n_uncovered = np.count_nonzero(np.all(dist[:, self.n_agents - 1:] > 0.25, axis=0))
+		
+		# sum of distances of closest agent for each landmark
+		min_dist = np.sum(np.min(dist[:, self.n_agents - 1:], axis=0))
+		
+		if self.sparse:
+			rew = - (self.tau * n_uncovered + (1-self.tau) * n_collisions)
+	
+		else:
+			rew = - (self.tau * min_dist + (1-self.tau) * n_collisions)
+
+		return rew, n_uncovered
+	
 
 	def _check_action(self, action):
 		
@@ -218,3 +237,4 @@ if __name__ == "__main__":
 		obs, r, done, _ = env.step(env.action_space.sample())
 		#env.step(np.array([[6.28, 0.2]]*n_agents), normalize=True)
 		env.render()
+		input("")

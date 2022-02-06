@@ -38,6 +38,7 @@ class TwoStepEnv(gym.Env):
 	metadata = {"render.modes": ["human"]}
 
 	def __init__(self):
+		
 		self.game_state = 0
 
 	def step(self, act):
