@@ -38,12 +38,15 @@ class NavigationEnv(gym.Env):
 	metadata = {"render.modes": ["human"]}
 
 	def __init__(self, n_agents, world_size: float = 2.5, tau: float = 0.5, max_steps: int = np.inf,
-                 hold_steps: int = 10, sparse: bool = False):
+                 hold_steps: int = 10, sparse: bool = False, init_agent_pos: np.array = None, init_landmark_pos: np.array = None):
 		
 		self.border = world_size*n_agents
 		self.n_agents = n_agents
 		self.tau = tau
 		self.sparse = sparse
+
+		self.init_agent_pos = None if init_agent_pos is None else init_agent_pos
+		self.init_landmark_pos = None if init_landmark_pos is None else init_landmark_pos
 		
 		self.low_state = np.array(
         	[[-self.border for j in range(n_agents*4 - 2)] for i in range(n_agents)], dtype=np.float32
@@ -54,7 +57,7 @@ class NavigationEnv(gym.Env):
         )
 
 		self.action_space = spaces.Box(
-			low=np.array([[-np.pi, 0.0]]*n_agents), high=np.array([[np.pi, 1.0]]*n_agents), dtype=np.float32
+			low=np.array([[-np.pi, 0.0]]*n_agents, dtype=np.float32), high=np.array([[np.pi, 1.0]]*n_agents, dtype=np.float32), dtype=np.float32
         )
 		
 		self.observation_space = spaces.Box(
@@ -73,8 +76,19 @@ class NavigationEnv(gym.Env):
 			low=min_rew, high=0, shape=(1,)
 		)
 	
-		self.agents = np.random.rand(self.n_agents, 2)*(self.border - 1) + 0.5
-		self.landmarks = np.random.rand(self.n_agents, 2)*(self.border - 0.5) + 0.25
+		if self.init_agent_pos is None:
+			self.agents = np.random.rand(self.n_agents, 2)*(self.border - 1) + 0.5
+		else:
+			if self.init_agent_pos.shape != (self.n_agents, 2):
+				raise ValueError(f"Agent position shape incorrect. Should be: {(self.n_agents, 2)}. Is {self.init_agent_pos.shape}")
+			self.agents = self.init_agent_pos.copy()
+
+		if self.init_landmark_pos is None:
+			self.landmarks = np.random.rand(self.n_agents, 2)*(self.border - 0.5) + 0.25
+		else:
+			if self.init_landmark_pos.shape != (self.n_agents, 2):
+				raise ValueError(f"Landmark position shape incorrect. Should be: {(self.n_agents, 2)}. Is {self.init_landmark_pos.shape}")
+			self.landmarks = self.init_landmark_pos.copy()
 
 		self.done = False
 		self.step_counter = 0
@@ -118,11 +132,17 @@ class NavigationEnv(gym.Env):
 		return obs, rew, self.done, {}
 
 
-	def reset(self, reset_positions: bool = True) -> np.array:
+	def reset(self) -> np.array:
 		
-		if reset_positions:	
+		if self.init_agent_pos is None:
 			self.agents = np.random.rand(self.n_agents, 2)*(self.border - 1) + 0.5
+		else:
+			self.agents = self.init_agent_pos.copy()
+
+		if self.init_landmark_pos is None:
 			self.landmarks = np.random.rand(self.n_agents, 2)*(self.border - 0.5) + 0.25
+		else:
+			self.landmarks = self.init_landmark_pos.copy()
 
 		self.done = False
 		self.step_counter = 0
@@ -227,14 +247,3 @@ class NavigationEnv(gym.Env):
 
 	def get_act_dim(self):
 		return 2
-
-if __name__ == "__main__":
-	n_agents = 3
-	env = NavigationEnv(n_agents)
-	obs = env.reset()
-	env.render()
-	while True:
-		obs, r, done, _ = env.step(env.action_space.sample())
-		#env.step(np.array([[6.28, 0.2]]*n_agents), normalize=True)
-		env.render()
-		input("")
