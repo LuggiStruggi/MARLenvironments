@@ -22,7 +22,7 @@ class NormalizeActWrapper(gym.ActionWrapper):
 
 class NormalizeRewWrapper(gym.RewardWrapper):
 
-	def __init__(self, env, high: float = 1.0, low: float = 0.0):
+	def __init__(self, env, high: float = 1.0, low: float = 0.0, random_policy_zero: bool = False):
 		super().__init__(env)
 		self.scale = (high - low)/(env.reward_space.high[0] - env.reward_space.low[0])
 		self.bias = low - env.reward_space.low[0]*self.scale
