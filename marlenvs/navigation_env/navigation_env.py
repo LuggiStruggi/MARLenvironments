@@ -153,7 +153,7 @@ class NavigationEnv(gym.Env):
 
 
 	def _calculate_reward(self, dist):
-
+	
 		# number of agent collistions (all distances between two agents smaller than agent diameter. Divided by two due to every distance twice in matrix) 
 		n_collisions = (np.count_nonzero(dist[:, :self.n_agents - 1] < 1))//2
 		
@@ -188,10 +188,11 @@ class NavigationEnv(gym.Env):
 			for j in range(self.n_agents):
 				
 				# agent-landmark x, y distances
-				observations[i, (self.n_agents-1)*2 + 2*j:(self.n_agents-1)*2 + 2*j + 2] = self.agents[i] - self.landmarks[j]
+				index = (self.n_agents-1)*2 + 2*j
+				observations[i, index:index + 2] = self.agents[i] - self.landmarks[j]
 				
 				# agent-landmark direct distances
-				dist[i, self.n_agents-1 + j] = np.linalg.norm(self.agents[i] - self.landmarks[j], ord=1)
+				dist[i, self.n_agents-1 + j] = np.linalg.norm(self.agents[i] - self.landmarks[j], ord=2)
 				
 				# agent-agent not with itself
 				if i == j:
@@ -203,7 +204,7 @@ class NavigationEnv(gym.Env):
 				observations[i, 2*k:2*k+2] = self.agents[i] - self.agents[j]
 				
 				# agent-landmark direct distances
-				dist[i, k] = np.linalg.norm(self.agents[i] - self.agents[j], ord=1)
+				dist[i, k] = np.linalg.norm(self.agents[i] - self.agents[j], ord=2)			
 		
 		return observations, dist
 
@@ -247,3 +248,18 @@ class NavigationEnv(gym.Env):
 
 	def get_act_dim(self):
 		return 2
+
+
+from marlenvs.wrappers import NormalizeActWrapper
+
+if __name__ == '__main__':
+	
+	env = NavigationEnv(n_agents = 1, max_steps = 100, tau=1.0, world_size=10)
+	env = NormalizeActWrapper(env)
+	env.reset()
+	env.render()
+	while True:
+		a0 = float(input("action0"))
+		a1 = float(input("action1"))
+		env.step(np.array([[a0, a1]]))
+		env.render()
