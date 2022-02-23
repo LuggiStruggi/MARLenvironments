@@ -192,7 +192,7 @@ class NavigationEnv(gym.Env):
 				observations[i, index:index + 2] = self.agents[i] - self.landmarks[j]
 				
 				# agent-landmark direct distances
-				dist[i, self.n_agents-1 + j] = np.linalg.norm(self.agents[i] - self.landmarks[j], ord=2)
+				dist[i, self.n_agents-1 + j] = np.linalg.norm(self.agents[i] - self.landmarks[j], ord=1)
 				
 				# agent-agent not with itself
 				if i == j:
@@ -204,7 +204,7 @@ class NavigationEnv(gym.Env):
 				observations[i, 2*k:2*k+2] = self.agents[i] - self.agents[j]
 				
 				# agent-landmark direct distances
-				dist[i, k] = np.linalg.norm(self.agents[i] - self.agents[j], ord=2)			
+				dist[i, k] = np.linalg.norm(self.agents[i] - self.agents[j], ord=1)			
 		
 		return observations, dist
 
