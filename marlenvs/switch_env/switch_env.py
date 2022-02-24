@@ -62,7 +62,7 @@ class SwitchEnv(gym.Env):
 
 		self.action_space = spaces.Tuple((spaces.Discrete(3), spaces.Discrete(3)))
 
-	def step(self, act: np.array) -> tuple[np.array, int, int, dict]:
+	def step(self, act: np.array):
 		
 		if self.done:
 			logger.warn(
