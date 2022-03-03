@@ -1,7 +1,8 @@
 import gym
 from gym import logger, spaces
 import numpy as np
-from gym.envs.classic_control import rendering
+import pygame
+from pygame import gfxdraw
 
 class NavigationEnv(gym.Env):
 	"""
@@ -97,8 +98,8 @@ class NavigationEnv(gym.Env):
 		self.hold_step_counter = 0
 		self.hold_steps = hold_steps
 
-		self.viewer = None
-
+		self.surface = None
+		self.screen = None
 
 	def step(self, act: np.array):
 		
@@ -211,32 +212,29 @@ class NavigationEnv(gym.Env):
 	# Render environment
 	def render(self, mode="human"):
 		
-		if self.viewer == None:
+		if self.surface == None:
 			length = int(self._world_to_render(self.border))
-			self.viewer = rendering.Viewer(width=length, height=length)
-			self.viewer.set_bounds(0, self.border, 0, self.border)
-			for i in range(len(self.landmarks)):
-				landmark = rendering.make_circle(radius=0.25)
-				landmark.set_color(1, 0, 0)
-				landmark.add_attr(rendering.Transform(translation=(self.landmarks[i][0], self.landmarks[i][1])))
-				self.viewer.add_geom(landmark)
-
-		for i in range(len(self.agents)):
-			agent = rendering.make_circle(radius=0.5)
-			agent.set_color(0, 1, 0)	
-			agent.add_attr(rendering.Transform(translation=(self.agents[i][0], self.agents[i][1])))
-			self.viewer.add_onetime(agent)
+			self.screen = pygame.display.set_mode((length, length))
+			self.surface = pygame.Surface((length, length))
 		
-		self.viewer.render(return_rgb_array=mode == "rgb_array")
+		self.surface.fill((255, 255, 255))
 
+		for landmark in self.landmarks:
+			gfxdraw.filled_circle(self.surface, self._world_to_render(landmark[0]), self._world_to_render(landmark[1]), self._world_to_render(0.25), (255, 0, 0))
+
+		for agent in self.agents:
+			gfxdraw.filled_circle(self.surface, self._world_to_render(agent[0]), self._world_to_render(agent[1]), self._world_to_render(0.5), (0, 255, 0))
+		
+		self.screen.blit(self.surface, (0, 0))
+		pygame.display.flip()
 	
 	def _world_to_render(self, coordinates):
 		if isinstance(coordinates, int) or isinstance(coordinates, float):
-			return 100*coordinates//4
+			return int((100*coordinates)//4)
 		elif isinstance(coordinates, list):
-			return [c*100//4 for c in coordinates]
+			return [int((c*100)//4) for c in coordinates]
 		elif isinstance(coordinates, tuple):
-			return (c*100//4 for c in coordinates)
+			return (int((c*100)//4) for c in coordinates)
 
 	def close(self):
 		if self.viewer:
@@ -250,16 +248,18 @@ class NavigationEnv(gym.Env):
 		return 2
 
 
-from marlenvs.wrappers import NormalizeActWrapper
 
 if __name__ == '__main__':
 	
-	env = NavigationEnv(n_agents = 1, max_steps = 100, tau=1.0, world_size=10)
+	from marlenvs.wrappers import NormalizeActWrapper, NormalizeObsWrapper
+	import time
+
+	env = NavigationEnv(n_agents = 3, max_steps = 100, tau=1.0, world_size=5)
 	env = NormalizeActWrapper(env)
+	env = NormalizeObsWrapper(env)
 	env.reset()
 	env.render()
 	while True:
-		a0 = float(input("action0"))
-		a1 = float(input("action1"))
-		env.step(np.array([[a0, a1]]))
+		obs, rew, _, _ =  env.step(np.array([[0, 0], [0, 0], [0, 0]]))
 		env.render()
+		time.sleep(0.03)
