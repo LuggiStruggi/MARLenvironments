@@ -237,9 +237,10 @@ class NavigationEnv(gym.Env):
 			return (int((c*100)//4) for c in coordinates)
 
 	def close(self):
-		if self.viewer:
-			self.viewer.close()
-			self.viewer = None
+		if self.screen:
+			self.surface = None
+			self.screen = None
+			pygame.quit()
 
 	def get_obs_dim(self):
 		return self.n_agents*4 - 2

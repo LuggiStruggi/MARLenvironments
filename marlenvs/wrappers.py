@@ -1,24 +1,35 @@
 import gym
 
+class Mapper:
+
+	def __init__(self, low_in, high_in, low_out, high_out):
+		
+		self.scale = (high_out - low_out)/(high_in - low_in)
+		self.low_out = low_out
+		self.low_in = low_in
+
+	def map(self, value):
+
+		return self.low_out + self.scale * (value - self.low_in)
+
+
 class NormalizeObsWrapper(gym.ObservationWrapper):
 
-    def __init__(self, env, high: float = 1.0, low: float = 0.0):
-        super().__init__(env)
-        self.scale = (high - low)/(env.observation_space.high - env.observation_space.low)
-        self.bias = low - env.observation_space.low*self.scale
-
-    def observation(self, obs):
-        return obs*self.scale + self.bias
+	def __init__(self, env, high: float = 1.0, low: float = 0.0):
+		super().__init__(env)
+		self.mapper = Mapper(low_in = env.observation_space.low, high_in = env.observation_space.high, low_out = low, high_out = high)
+	
+	def observation(self, obs):
+		return self.mapper.map(obs)
 
 class NormalizeActWrapper(gym.ActionWrapper):
 
-    def __init__(self, env, high: float = 1.0, low: float = 0.0):
-        super().__init__(env)
-        self.scale = (env.action_space.high - env.action_space.low)/(high - low)
-        self.bias =  self.action_space.low - low*self.scale
+	def __init__(self, env, high: float = 1.0, low: float = 0.0):
+		super().__init__(env)
+		self.mapper = Mapper(low_in = low, high_in = high, low_out = env.action_space.low, high_out = env.action_space.high)
 
-    def action(self, act):
-        return act*self.scale + self.bias
+	def action(self, act):
+		return self.mapper.map(act)
 
 class NormalizeRewWrapper(gym.RewardWrapper):
 
@@ -27,15 +38,10 @@ class NormalizeRewWrapper(gym.RewardWrapper):
 	"""
 	def __init__(self, env, high: float = 1.0, low: float = 0.0, random_policy_zero: bool = False):
 		super().__init__(env)
-		self.scale = (high - low)/(env.reward_space.high[0] - env.reward_space.low[0])
-		self.bias = low - env.reward_space.low[0]*self.scale
-		if random_policy_zero:
-			print("Calculating random policy reward over 1000 episodes with 100 steps each.")
-			self.bias -= get_avg_random_reward(env) * self.scale
-			print("Random policy average reward calculated and set as 0.\n")
+		self.mapper = Mapper(low_in = env.reward_space.low[0], high_in = env.reward_space.high[0], low_out = low, high_out = high)
 
 	def reward(self, rew):
-		return rew *self.scale + self.bias
+		return self.mapper.map(rew)
 
 
 def get_avg_random_reward(env):
