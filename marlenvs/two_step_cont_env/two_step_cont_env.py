@@ -80,7 +80,7 @@ class TwoStepContEnv(gym.Env):
 				"True' -- any further steps are undefined behavior."
 			)
 
-		obs = np.array([[1]] + [[0]]*(self.n_agents - 1))
+		obs = np.array([[2]] + [[2]]*(self.n_agents - 1))
 		self.game_state += 1
 		
 		return obs, rew, done, {}
@@ -130,7 +130,7 @@ class TwoStepContEnv(gym.Env):
 			r = [self._reward(v) for v in self.actions]
 			avg = self._reward(np.mean(self.actions))
 			self.ln2 = self.ax.scatter(self.actions, r, color='red', zorder=3)
-			self.ln3 = self.ax.scatter(np.mean(self.actions), avg, color='yellow', zorder=4)	
+			self.ln3 = self.ax.scatter(np.mean(self.actions), avg, marker='*', color='yellow', zorder=4)	
 
 		self.fig.canvas.draw()
 		self.fig.canvas.flush_events()

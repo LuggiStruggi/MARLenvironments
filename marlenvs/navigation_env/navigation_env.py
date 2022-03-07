@@ -39,12 +39,13 @@ class NavigationEnv(gym.Env):
 	metadata = {"render.modes": ["human"]}
 
 	def __init__(self, n_agents, world_size: float = 2.5, tau: float = 0.5, max_steps: int = np.inf,
-                 hold_steps: int = 10, sparse: bool = False, init_agent_pos: np.array = None, init_landmark_pos: np.array = None):
+                 hold_steps: int = 10, sparse: bool = False, init_agent_pos: np.array = None, init_landmark_pos: np.array = None, action_type = "translation"):
 		
 		self.border = world_size*n_agents
 		self.n_agents = n_agents
 		self.tau = tau
 		self.sparse = sparse
+		self.action_type = action_type
 
 		self.init_agent_pos = None if init_agent_pos is None else init_agent_pos
 		self.init_landmark_pos = None if init_landmark_pos is None else init_landmark_pos
@@ -56,10 +57,24 @@ class NavigationEnv(gym.Env):
 		self.high_state = np.array(
         	[[self.border for j in range(n_agents*4 - 2)] for i in range(n_agents)], dtype=np.float32
         )
+		
+		if self.action_type == "translation":
+			self.action_space = spaces.Box(
+				low=np.array([[-1.0, -1.0]]*n_agents, dtype=np.float32), high=np.array([[1.0, 1.0]]*n_agents, dtype=np.float32), dtype=np.float32
+        	)
+		elif self.action_type == "rotation_translation":
+			self.action_space = spaces.Box(
+				low=np.array([[-np.pi, 0.0]]*n_agents, dtype=np.float32), high=np.array([[np.pi, 1.0]]*n_agents, dtype=np.float32), dtype=np.float32
+        	)
+		elif self.action_type == "velocity":
+			self.action_space = spaces.Box(
+				low=np.array([[-0.3, -0.3]]*n_agents, dtype=np.float32), high=np.array([[0.3, 0.3]]*n_agents, dtype=np.float32), dtype=np.float32
+        	)
+		elif self.action_type == "rotation_velocity":
+			self.action_space = spaces.Box(
+				low=np.array([[-np.pi, 0.0]]*n_agents, dtype=np.float32), high=np.array([[np.pi, 0.3]]*n_agents, dtype=np.float32), dtype=np.float32
+        	)
 
-		self.action_space = spaces.Box(
-			low=np.array([[-np.pi, 0.0]]*n_agents, dtype=np.float32), high=np.array([[np.pi, 1.0]]*n_agents, dtype=np.float32), dtype=np.float32
-        )
 		
 		self.observation_space = spaces.Box(
 			low=self.low_state, high=self.high_state, dtype=np.float32
@@ -69,6 +84,8 @@ class NavigationEnv(gym.Env):
 		# min reward for all situations -> all landmarks in one corner all agents in the corner diagonally across
 		# -> maximum distance from landmarks + maximal overlapping
 		self.agents = np.full(shape=(n_agents, 2), fill_value=self.border - 0.5)
+		self.agents_vel = np.zeros((n_agents, 2))
+
 		self.landmarks = np.full(shape=(n_agents, 2), fill_value=0.25)
 		_, dist = self._get_observations()
 		min_rew, _ = self._calculate_reward(dist)
@@ -112,8 +129,19 @@ class NavigationEnv(gym.Env):
 			)
 
 		self._check_action(act)
-		trans = [[r*np.cos(phi), r*np.sin(phi)] for phi, r in act]
-		self.agents += trans
+
+		if self.action_type == "translation":
+			self.agents_vel = act
+		elif self.action_type == "rotation_translation":
+			self.agents_vel = [[r*np.cos(phi), r*np.sin(phi)] for phi, r in act]
+		elif self.action_type == "velocity":
+			self.agents_vel += act
+			self.agents_vel.clip(min=-1.0, max=1.0)
+		elif self.action_type == "rotation_velocity":
+			self.agents_vel += [[r*np.cos(phi), r*np.sin(phi)] for phi, r in act]
+			self.agents_vel.clip(min=-1.0, max=1.0)
+
+		self.agents += self.agents_vel
 		self.agents = np.clip(self.agents, 0.5, self.border-0.5)
 		obs, dist = self._get_observations()
 		
